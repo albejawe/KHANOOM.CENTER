@@ -42,10 +42,13 @@ export function PreviewCategoryLink({ href, name, count, imageKey, order = 0 }: 
 interface ProductShelfProps {
   categoryId: number;
   initial: CatalogPage;
+  initialFocusProduct?: Product | null;
 }
 
-export function PreviewProductShelf({ categoryId, initial }: ProductShelfProps) {
-  const [products, setProducts] = useState<Product[]>(initial.products);
+export function PreviewProductShelf({ categoryId, initial, initialFocusProduct }: ProductShelfProps) {
+  const initialProducts = initialFocusProduct && !initial.products.some((p) => p.id === initialFocusProduct.id)
+    ? [...initial.products, initialFocusProduct] : initial.products;
+  const [products, setProducts] = useState<Product[]>(initialProducts);
   const [cursor, setCursor] = useState<number | null>(initial.nextCursor);
   const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -59,10 +62,10 @@ export function PreviewProductShelf({ categoryId, initial }: ProductShelfProps) 
     const deepLink = new URLSearchParams(window.location.search).get("p");
     if (deepLink && /^\d+$/.test(deepLink)) {
       const id = Number(deepLink);
-      if (initial.products.some((p) => p.id === id)) setSelectedId(id);
+      if (initialProducts.some((p) => p.id === id)) setSelectedId(id);
     }
     return () => { alive.current = false; };
-  }, [initial.products]);
+  }, [initialProducts]);
 
   const loadMore = useCallback(async () => {
     if (busy.current || cursor === null) return;
@@ -125,7 +128,7 @@ export function PreviewProductShelf({ categoryId, initial }: ProductShelfProps) 
             {loading ? <><LoaderCircle className="animate-spin" size={18} /> جاري عرض المزيد...</> :
               <><ArrowLeft size={18} /> عرض قطع أكثر</>}
           </button>
-        ) : <p>وصلتي لآخر القطع المعروضة ♡</p>}
+        ) : <p>وصلتي لآخر القطع المعروضة</p>}
         {failed && <p role="alert">ضعف الاتصال، اضغطي على «عرض قطع أكثر» للمحاولة مجدداً</p>}
       </div>
       {selectedId !== null && <ProductViewer products={products} initialProductId={selectedId} onClose={() => setSelectedId(null)} />}
