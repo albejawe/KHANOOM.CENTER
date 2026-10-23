@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link, { useLinkStatus } from "next/link";
 import { ArrowLeft, ChevronLeft, ImageOff, LoaderCircle, ShoppingBag } from "lucide-react";
 import { imageUrl } from "@/lib/images";
@@ -46,8 +46,8 @@ interface ProductShelfProps {
 }
 
 export function PreviewProductShelf({ categoryId, initial, initialFocusProduct }: ProductShelfProps) {
-  const initialProducts = initialFocusProduct && !initial.products.some((p) => p.id === initialFocusProduct.id)
-    ? [...initial.products, initialFocusProduct] : initial.products;
+  const initialProducts = useMemo(() => initialFocusProduct && !initial.products.some((p) => p.id === initialFocusProduct.id)
+    ? [...initial.products, initialFocusProduct] : initial.products, [initial.products, initialFocusProduct]);
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [cursor, setCursor] = useState<number | null>(initial.nextCursor);
   const [loading, setLoading] = useState(false);
