@@ -164,3 +164,20 @@
 @media (prefers-reduced-motion:reduce){
   .preview-site *, .preview-site *::before, .preview-site *::after {animation-duration:.01ms!important;transition-duration:.01ms!important;}
 }
+
+/* Production storefront and the approved second concept: no promotional banners or progress strips. */
+.preview-site[data-variant="2"] .live-section-title,
+.preview-site[data-variant="2"] .preview-section-title { margin-top: 25px; margin-bottom: 17px; }
+.preview-site[data-variant="2"] .live-section-title h1 { font-size: 20px; font-weight: 500; line-height: 1.65; letter-spacing: -.35px; }
+.preview-site[data-variant="2"] .preview-section-title h2 { font-size: 20px; font-weight: 500; line-height: 1.65; }
+.preview-site[data-variant="2"] .live-footer {
+  padding: 40px 12px 30px;
+  line-height: 1.95;
+  font-size: 13px;
+  color: #496b60;
+  text-align: center;
+  font-weight: 400;
+  text-wrap: balance;
+}
+.preview-site[data-variant="2"] .preview-header { justify-content: flex-start; }
+.preview-site[data-variant="2"] .preview-brand { min-width: 0; }

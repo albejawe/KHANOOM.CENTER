@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getCategoryById, getProductsForSubcategory, getProductDetails } from "@/lib/queries";
+import { getCategoryById, getProductDetails } from "@/lib/queries";
 import { imageUrl } from "@/lib/images";
 import { formatPrice } from "@/lib/format";
-import SiteHeader from "@/components/site/SiteHeader";
-import ProductGrid from "@/components/site/ProductGrid";
+import LiveStorefront from "@/components/site/LiveStorefront";
+import { getPreviewProductPage } from "@/lib/catalog-preview";
 
 // Fast server rendering with direct product lookup
 
@@ -102,31 +102,29 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   };
 }
 
-export default async function SubcategoryProductsPage({ params }: Props) {
-  const { id } = await params;
-  const subcategoryId = parseInt(id, 10);
-  if (isNaN(subcategoryId)) notFound();
+export default async function SubcategoryProductsPage({ params, searchParams }: Props) {
+  const [{ id }, { p }] = await Promise.all([params, searchParams]);
+  const subcategoryId = Number(id);
+  if (!Number.isSafeInteger(subcategoryId) || subcategoryId <= 0) notFound();
 
-  const category = await getCategoryById(subcategoryId);
+  const [category, productPage] = await Promise.all([
+    getCategoryById(subcategoryId),
+    getPreviewProductPage(subcategoryId),
+  ]);
   if (!category) notFound();
 
-  const products = await getProductsForSubcategory(subcategoryId);
+  // Keep old product-sharing URLs working even when the item isn't in the first 24.
+  const requestedId = typeof p === "string" && /^[1-9]\d*$/.test(p) ? Number(p) : null;
+  const focused = requestedId && Number.isSafeInteger(requestedId)
+    ? await getProductDetails(requestedId)
+    : null;
+  const initialFocusProduct = focused && focused.category_id === subcategoryId && !focused.is_hidden ? focused : null;
 
-  const backHref = category.parent_id ? `/c/${category.parent_id}` : "/";
-
-  return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      <SiteHeader
-        title={category.name}
-        subtitle={`${products.length} قطعة معروضة • اضغط على الصورة للتكبير`}
-        backHref={backHref}
-        backLabel="رجوع"
-      />
-
-      <main className="flex-1 max-w-md w-full mx-auto pb-12">
-        {/* Instagram 3-columns Style Grid */}
-        <ProductGrid products={products} />
-      </main>
-    </div>
-  );
+  return <LiveStorefront
+    heading={category.name}
+    categoryId={subcategoryId}
+    productPage={productPage}
+    initialFocusProduct={initialFocusProduct}
+    backHref={category.parent_id ? `/c/${category.parent_id}` : "/"}
+  />;
 }

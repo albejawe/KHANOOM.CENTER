@@ -7,6 +7,7 @@ import { ArrowRight, ArrowUpLeft, ChevronLeft, Heart, ShoppingBag } from "lucide
 import { getCategoryById, getMainCategoriesWithDetails, getSubcategoriesWithDetails } from "@/lib/queries";
 import { getPreviewProductPage } from "@/lib/catalog-preview";
 import { PreviewCategoryLink, PreviewProductShelf } from "@/components/site/PreviewCatalog";
+import { KHANOM_ADDRESS } from "@/lib/storefront-config";
 import "./preview.css";
 
 const previewFont = IBM_Plex_Sans_Arabic({
@@ -23,7 +24,7 @@ export const metadata: Metadata = {
 
 const concepts: Record<string, { name: string; eyebrow: string; tagline: string; hint: string }> = {
   "1": { name: "الستوري", eyebrow: "تسوّقين مثل الستوري", tagline: "أهلاً بيج في خانم", hint: "اختاري القسم اللي يعجبج" },
-  "2": { name: "المحادثة", eyebrow: "سهلة مثل الواتساب", tagline: "شنو تحبين تشوفين؟", hint: "اضغطي على القسم حتى تشوفين الموديلات" },
+  "2": { name: "المحادثة", eyebrow: "", tagline: "", hint: "" },
   "3": { name: "المجلة", eyebrow: "معرض أنيق وواضح", tagline: "تشكيلة خانم", hint: "من أقسامنا، اختاري اللي يناسبج" },
   "4": { name: "الريلز", eyebrow: "صور كبيرة مثل السوشل ميديا", tagline: "كلشي تحبينه بمكان واحد", hint: "افتحي القسم وتصفحي الصور" },
   "5": { name: "البسيط", eyebrow: "أوضح تصميم وأكبر أزرار", tagline: "مجمع خانم", hint: "أولاً اختاري القسم" },
@@ -112,37 +113,37 @@ async function PreviewContent({ params }: Props) {
   return (
     <div className={`preview-site ${previewFont.className}`} data-variant={variant} dir="rtl">
       <div className="preview-app-shell">
-        <div className="preview-design-switch" aria-label="التصاميم الخمسة">
+        {variant !== "2" && <div className="preview-design-switch" aria-label="التصاميم الخمسة">
           <span>قارني التصاميم:</span>
           {Object.entries(concepts).map(([number]) => (
             <Link key={number} href={`/preview/${number}`} className={number === variant ? "selected" : ""} aria-current={number === variant ? "page" : undefined}>
               {number}
             </Link>
           ))}
-        </div>
+        </div>}
         <header className="preview-header">
           {backHref ?
             <Link href={backHref} className="preview-back" aria-label="رجوع للأقسام"><ArrowRight size={21} /><span>رجوع</span></Link> :
             <div className="preview-mark"><ShoppingBag size={22} strokeWidth={1.5} /></div>}
           <div className="preview-brand"><strong>مجمع خانم</strong><span>ملابس • كوزمتكس • أطفال</span></div>
-          <span className="preview-header-heart"><Heart size={20} strokeWidth={1.5} /></span>
+          {variant !== "2" && <span className="preview-header-heart"><Heart size={20} strokeWidth={1.5} /></span>}
         </header>
 
         <main className="preview-main">
-          <div className="preview-hero">
+          {variant !== "2" && <div className="preview-hero">
             <div className="preview-eyebrow"><span className="preview-eyebrow-dot" />{concept.eyebrow}</div>
             <h1>{title}</h1>
             <p>{hint}</p>
-          </div>
+          </div>}
 
-          <div className="preview-stepper" aria-label="مراحل التصفح">
+          {variant !== "2" && <div className="preview-stepper" aria-label="مراحل التصفح">
             <span className={stage === "home" ? "current" : "complete"}>١ الأقسام</span><ChevronLeft size={15} />
             <span className={stage === "c" ? "current" : stage === "home" ? "" : "complete"}>٢ الفئات</span><ChevronLeft size={15} />
             <span className={productPage !== null ? "current" : ""}>٣ المنتجات</span>
-          </div>
+          </div>}
 
           <div className="preview-section-title">
-            <h2>{heading}</h2>
+            <h2>{variant === "2" && stage !== "home" ? title : heading}</h2>
             {productPage === null && <span>{list.length} {stage === "home" ? "أقسام" : "فئات"}</span>}
           </div>
 
@@ -155,7 +156,7 @@ async function PreviewContent({ params }: Props) {
               {!list.length && <div className="preview-empty"><ShoppingBag size={36} />ماكو أقسام معروضة حالياً</div>}
             </div>}
 
-          <div className="preview-footer"><ArrowUpLeft size={14} /> مجمع خانم • الكوت، شارع الشيرازي</div>
+          <div className={`preview-footer ${variant === "2" ? "live-footer" : ""}`}>{variant === "2" ? KHANOM_ADDRESS : <><ArrowUpLeft size={14} /> مجمع خانم • الكوت، شارع الشيرازي</>}</div>
         </main>
       </div>
     </div>

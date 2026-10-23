@@ -4,8 +4,7 @@ import {
   getCategoryById,
   getSubcategoriesWithDetails,
 } from "@/lib/queries";
-import SiteHeader from "@/components/site/SiteHeader";
-import CategoryCard from "@/components/site/CategoryCard";
+import LiveStorefront from "@/components/site/LiveStorefront";
 
 // Ultra-fast single SQL query to load all subcategories with counts and covers
 
@@ -57,56 +56,27 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function CategoryPage({ params }: Props) {
   const { id } = await params;
-  const parentId = parseInt(id, 10);
-  if (isNaN(parentId)) notFound();
+  const parentId = Number(id);
+  if (!Number.isSafeInteger(parentId) || parentId <= 0) notFound();
 
-  const category = await getCategoryById(parentId);
-  if (!category) notFound();
+  const [category, subcategories] = await Promise.all([
+    getCategoryById(parentId),
+    getSubcategoriesWithDetails(parentId),
+  ]);
+  if (!category || category.parent_id !== null) notFound();
 
-  // Ultra-fast single SQL query to load all subcategories with counts and covers
-  const subcategories = await getSubcategoriesWithDetails(parentId);
+  // Existing links to categories without children still open their products.
+  if (subcategories.length === 0) redirect(`/s/${parentId}`);
 
-  // If this category has NO subcategories, redirect immediately to its products view!
-  if (subcategories.length === 0) {
-    redirect(`/s/${parentId}`);
-  }
-
-  return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col antialiased">
-      <SiteHeader
-        title={category.name}
-        subtitle="اختر الفئة لمشاهدة الموديلات"
-        backHref="/"
-        backLabel="الرئيسية"
-      />
-
-      <main className="flex-1 max-w-md w-full mx-auto px-4 py-4 space-y-3">
-        <div className="flex items-center justify-between px-1 pt-1 pb-0.5">
-          <h2 className="text-sm font-extrabold text-slate-800">
-            فئات {category.name}
-          </h2>
-          <span className="text-xs font-semibold text-slate-400">
-            {subcategories.length} فئات
-          </span>
-        </div>
-
-        <div className="space-y-2.5">
-          {subcategories.map((sub, index) => (
-            <CategoryCard
-              key={sub.id}
-              href={`/s/${sub.id}`}
-              name={sub.name}
-              countLabel={
-                sub.product_count > 0
-                  ? `${sub.product_count} قطعة معروضة`
-                  : "تصفح الفئة"
-              }
-              imageKey={sub.cover_key}
-              priority={index === 0}
-            />
-          ))}
-        </div>
-      </main>
-    </div>
-  );
+  return <LiveStorefront
+    heading={category.name}
+    backHref="/"
+    items={subcategories.map((item) => ({
+      id: item.id,
+      name: item.name,
+      href: `/s/${item.id}`,
+      count: item.product_count > 0 ? `${item.product_count} قطعة` : "تصفحي القسم",
+      imageKey: item.cover_key,
+    }))}
+  />;
 }
