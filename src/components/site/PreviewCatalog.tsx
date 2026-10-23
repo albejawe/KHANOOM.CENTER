@@ -24,7 +24,7 @@ interface CategoryLinkProps {
 
 export function PreviewCategoryLink({ href, name, count, imageKey, order = 0 }: CategoryLinkProps) {
   return (
-    <Link href={href} className="preview-category-link" prefetch={true} aria-label={`عرض ${name}`}>
+    <Link href={href} className="preview-category-link" prefetch={href.includes("/s/") ? false : undefined} aria-label={`عرض ${name}`}>
       <span className="preview-category-photo">
         {imageKey ? <img src={imageUrl(imageKey, "thumb")} loading={order < 2 ? "eager" : "lazy"} decoding="async" alt="" /> :
           <span className="preview-category-fallback"><ShoppingBag size={28} strokeWidth={1.3} /></span>}
