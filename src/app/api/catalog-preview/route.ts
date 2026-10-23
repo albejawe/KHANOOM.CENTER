@@ -6,9 +6,9 @@ export async function GET(request: NextRequest) {
   const afterText = request.nextUrl.searchParams.get("after");
   const categoryId = Number(categoryText);
   const after = afterText === null ? null : Number(afterText);
-  if (!/^[1-9]\\d*$/.test(categoryText) ||
+  if (!/^[1-9]\d*$/.test(categoryText) ||
       !Number.isSafeInteger(categoryId) ||
-      (afterText !== null && (!/^[1-9]\\d*$/.test(afterText) || !Number.isSafeInteger(after)))) {
+      (afterText !== null && (!/^[1-9]\d*$/.test(afterText) || !Number.isSafeInteger(after)))) {
     return NextResponse.json({ error: "Invalid category or cursor" }, { status: 400 });
   }
   try {
