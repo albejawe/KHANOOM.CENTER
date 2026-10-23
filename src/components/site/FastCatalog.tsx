@@ -6,8 +6,7 @@ import { imageUrl } from "@/lib/images";
 import { formatPrice } from "@/lib/format";
 import type { Category, Product } from "@/lib/queries";
 import ProductViewer from "./ProductViewer";
-import { Store, Sparkles, ImageOff, Lock } from "lucide-react";
-import Link from "next/link";
+import { Store, Sparkles, ImageOff } from "lucide-react";
 
 interface Props {
   mainCategories: Category[];
@@ -87,13 +86,6 @@ export default function FastCatalog({
             <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-700">
               {filteredProducts.length} قطعة
             </span>
-            <Link
-              href="/admin"
-              title="لوحة الإدارة"
-              className="w-8 h-8 rounded-full hover:bg-slate-100 text-slate-600 hover:text-slate-900 flex items-center justify-center transition"
-            >
-              <Lock className="w-3.5 h-3.5" />
-            </Link>
           </div>
         </div>
 

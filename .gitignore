@@ -1,4 +1,4 @@
-﻿# secrets - NEVER commit
+# secrets - NEVER commit
 ENV.txt
 .env*
 !.env.example
@@ -16,4 +16,8 @@ next-env.d.ts
 # os
 .DS_Store
 Thumbs.db
+
+# scratch
+scratch/
+
 

@@ -1,5 +1,11 @@
+import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import { getCategoryById, getSubcategories, getCategoryCoverKey, getProductsForSubcategory } from "@/lib/queries";
+import {
+  getCategoryById,
+  getSubcategories,
+  getCategoryCoverKey,
+  getProductsForSubcategory,
+} from "@/lib/queries";
 import SiteHeader from "@/components/site/SiteHeader";
 import CategoryCard from "@/components/site/CategoryCard";
 
@@ -7,6 +13,46 @@ export const instant = false;
 
 interface Props {
   params: Promise<{ id: string }>;
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params;
+  const parentId = parseInt(id, 10);
+  if (isNaN(parentId)) return {};
+
+  const category = await getCategoryById(parentId);
+  if (!category) return {};
+
+  const ctaText = `انقر هنا لمشاهدة ${category.name}`;
+  const ogImageUrl = `/api/og?title=${encodeURIComponent(ctaText)}&subtitle=${encodeURIComponent("مجمع خانم للأزياء والكوزمتكس")}`;
+
+  return {
+    title: `${ctaText} | مجمع خانم`,
+    description: `تصفح تشكيلة ${category.name} مع الأسعار والتفاصيل في مجمع خانم للأزياء والكوزمتكس`,
+    openGraph: {
+      title: ctaText,
+      description: `تصفح تشكيلة ${category.name} مع الأسعار والتفاصيل في مجمع خانم للأزياء والكوزمتكس`,
+      url: `/c/${parentId}`,
+      siteName: "مجمع خانم للأزياء والكوزمتكس",
+      images: [
+        {
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+          type: "image/png",
+          alt: ctaText,
+        },
+      ],
+      locale: "ar_IQ",
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: ctaText,
+      description: `تصفح تشكيلة ${category.name} مع الأسعار والتفاصيل في مجمع خانم للأزياء والكوزمتكس`,
+      images: [ogImageUrl],
+    },
+  };
 }
 
 export default async function CategoryPage({ params }: Props) {

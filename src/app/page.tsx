@@ -1,10 +1,37 @@
+import type { Metadata } from "next";
 import { getMainCategories, getSubcategories, getCategoryCoverKey, getProductsForSubcategory } from "@/lib/queries";
-import SiteHeader from "@/components/site/SiteHeader";
 import CategoryCard from "@/components/site/CategoryCard";
-import { Sparkles, Store, Lock } from "lucide-react";
-import Link from "next/link";
+import { Sparkles, Store } from "lucide-react";
 
 export const instant = false;
+
+export const metadata: Metadata = {
+  title: "مجمع خانم للأزياء والكوزمتكس - انقر هنا لمشاهدة جميع المنتجات",
+  description: "تصفح أحدث تشكيلات الأزياء النسائية وملابس الأطفال ومستحضرات التجميل مع الأسعار الحصرية في مجمع خانم",
+  openGraph: {
+    title: "انقر هنا لمشاهدة جميع المنتجات",
+    description: "تصفح أحدث تشكيلات الأزياء النسائية وملابس الأطفال ومستحضرات التجميل في مجمع خانم",
+    url: "/",
+    siteName: "مجمع خانم للأزياء والكوزمتكس",
+    images: [
+      {
+        url: `/api/og?title=${encodeURIComponent("انقر هنا لمشاهدة جميع المنتجات")}`,
+        width: 1200,
+        height: 630,
+        type: "image/png",
+        alt: "انقر هنا لمشاهدة جميع المنتجات - مجمع خانم",
+      },
+    ],
+    locale: "ar_IQ",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "انقر هنا لمشاهدة جميع المنتجات",
+    description: "تصفح أحدث تشكيلات الأزياء النسائية وملابس الأطفال ومستحضرات التجميل في مجمع خانم",
+    images: [`/api/og?title=${encodeURIComponent("انقر هنا لمشاهدة جميع المنتجات")}`],
+  },
+};
 
 export default async function HomePage() {
   const mainCategories = await getMainCategories();
@@ -44,7 +71,7 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col antialiased">
-      {/* Top Header */}
+      {/* Top Header without any admin links */}
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-100 shadow-xs">
         <div className="max-w-md mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -60,14 +87,6 @@ export default async function HomePage() {
               </span>
             </div>
           </div>
-
-          <Link
-            href="/admin"
-            title="لوحة الإدارة"
-            className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 flex items-center justify-center transition border border-slate-200/60"
-          >
-            <Lock className="w-4 h-4" />
-          </Link>
         </div>
       </header>
 

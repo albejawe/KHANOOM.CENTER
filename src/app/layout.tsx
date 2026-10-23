@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Noto_Sans_Arabic } from "next/font/google";
 import "./globals.css";
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://khanomcenter.vercel.app";
+
 const arabicFont = Noto_Sans_Arabic({
   subsets: ["arabic"],
   weight: ["400", "500", "600", "700", "800", "900"],
@@ -10,8 +12,12 @@ const arabicFont = Noto_Sans_Arabic({
 });
 
 export const metadata: Metadata = {
-  title: "مجمع خانم - أزياء وكوزمتكس",
-  description: "المعرض الرقمي لمنتجات مجمع خانم - ملابس نسائية وأطفال ومستحضرات تجميل",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: "مجمع خانم - أزياء وكوزمتكس",
+    template: "%s | مجمع خانم",
+  },
+  description: "المعرض الرقمي لمنتجات مجمع خانم - ملابس نسائية وأطفال ومستحضرات تجميل مع الأسعار والتفاصيل",
   manifest: "/manifest.json",
   icons: {
     icon: "/icon.svg",
@@ -21,6 +27,14 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "مجمع خانم",
+  },
+  openGraph: {
+    siteName: "مجمع خانم للأزياء والكوزمتكس",
+    locale: "ar_IQ",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
   },
 };
 

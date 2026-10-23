@@ -5,15 +5,16 @@
  * - `<image_key>/f` : full resolution (width up to 1280px, ~120-180KB)
  */
 
+export const DEFAULT_IMAGE_BASE_URL =
+  process.env.NEXT_PUBLIC_IMAGE_BASE_URL ||
+  "https://pub-57b2de64f9154f7bbe89467ccbc4dedd.r2.dev";
+
 export function imageUrl(
   key: string,
   variant: "thumb" | "full" = "thumb",
   customBase?: string
 ): string {
-  const base =
-    customBase ||
-    process.env.NEXT_PUBLIC_IMAGE_BASE_URL ||
-    "";
+  const base = customBase || DEFAULT_IMAGE_BASE_URL;
   const cleanBase = base.replace(/\/+$/, "");
   const cleanKey = key.replace(/^\/+/, "");
   const suffix = variant === "thumb" ? "t" : "f";
