@@ -29,13 +29,13 @@ export default function ProductGrid({ products }: Props) {
 
   if (products.length === 0) {
     return (
-      <div className="py-20 text-center space-y-3 px-4">
+      <div className="py-24 text-center space-y-3 px-4">
         <div className="w-16 h-16 rounded-3xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
           <ImageOff className="w-8 h-8" />
         </div>
-        <h3 className="text-base font-bold text-slate-700">لا توجد منتجات معروضة حالياً</h3>
-        <p className="text-xs text-slate-400 max-w-xs mx-auto">
-          سيتم إضافة أحدث الموديلات قريباً، تفضل بزيارة باقي الأقسام
+        <h3 className="text-base font-bold text-slate-800">لا توجد قطع معروضة في هذه الفئة</h3>
+        <p className="text-xs text-slate-500 max-w-xs mx-auto">
+          سيتم تنزيل أحدث الموديلات قريباً، يمكنك العودة وتصفح باقي الفئات
         </p>
       </div>
     );
@@ -43,13 +43,13 @@ export default function ProductGrid({ products }: Props) {
 
   return (
     <>
-      {/* 3-Column Instagram Style Grid */}
-      <div className="grid grid-cols-3 gap-1 md:gap-2">
+      {/* 2-Column on Mobile, 3-Column on Tablet/Desktop, 4:5 Portrait Ratio */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-2.5 p-2 sm:p-3">
         {products.map((product) => (
           <div
             key={product.id}
             onClick={() => setActiveProductId(product.id)}
-            className="group relative aspect-square bg-slate-100 overflow-hidden cursor-pointer active:opacity-80 transition"
+            className="group relative aspect-[4/5] rounded-2xl overflow-hidden bg-slate-200 cursor-pointer active:scale-[0.98] transition shadow-xs hover:shadow-md border border-slate-200/60"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -60,11 +60,21 @@ export default function ProductGrid({ products }: Props) {
             />
 
             {/* Price Badge on Bottom */}
-            <div className="absolute bottom-1 inset-x-1 flex justify-center pointer-events-none">
-              <span className="text-[10px] sm:text-xs font-black px-1.5 py-0.5 rounded-lg bg-black/75 text-amber-300 backdrop-blur-xs shadow-xs">
+            <div className="absolute inset-x-0 bottom-0 p-2.5 pt-6 bg-gradient-to-t from-slate-950/85 via-slate-950/30 to-transparent flex flex-col justify-end pointer-events-none">
+              <span className="text-sm sm:text-base font-black text-amber-300 drop-shadow">
                 {formatPrice(product.price)}
               </span>
             </div>
+
+            {/* Available Sizes Tag on Top Corner */}
+            {product.sizes && product.sizes.length > 0 && (
+              <div className="absolute top-2 end-2 pointer-events-none">
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-black/60 text-white backdrop-blur shadow-xs">
+                  {product.sizes[0].name}
+                  {product.sizes.length > 1 ? ` +${product.sizes.length - 1}` : ""}
+                </span>
+              </div>
+            )}
           </div>
         ))}
       </div>

@@ -12,7 +12,6 @@ import {
   ZoomOut,
   Share2,
   Check,
-  MessageCircle,
 } from "lucide-react";
 
 interface Props {
@@ -145,17 +144,6 @@ export default function ProductViewer({
 
   const toggleZoom = () => {
     setScale((prev) => (prev === 1 ? 2.3 : 1));
-  };
-
-  // WhatsApp 1-tap direct inquiry message
-  const handleWhatsAppInquiry = () => {
-    if (!currentProduct) return;
-    const sizesText =
-      currentProduct.sizes && currentProduct.sizes.length > 0
-        ? currentProduct.sizes.map((s) => s.name).join("، ")
-        : "قياس موحد";
-    const text = `مرحباً مجمع خانم، أود الاستفسار عن هذا الموديل:\n- كود القطعة: #${currentProduct.id}\n- السعر: ${formatPrice(currentProduct.price)}\n- القياسات: ${sizesText}\n- رابط القطعة:\n${window.location.href}`;
-    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, "_blank");
   };
 
   // Quick Share / Copy Link
@@ -322,17 +310,7 @@ export default function ProductViewer({
             </p>
           )}
 
-          {/* 1-Tap WhatsApp Direct Inquiry Button */}
-          <button
-            type="button"
-            onClick={handleWhatsAppInquiry}
-            className="w-full h-13 rounded-2xl bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white font-black text-sm shadow-lg shadow-emerald-900/40 transition flex items-center justify-center gap-2.5"
-          >
-            <MessageCircle className="w-5 h-5 fill-current" />
-            <span>طلب أو استفسار عن هذا الموديل عبر واتساب</span>
-          </button>
-
-          <p className="text-[10px] text-center text-slate-400 pt-0.5">
+          <p className="text-[10px] text-center text-slate-400 pt-1">
             اسحب لليمين أو اليسار للتنقل • اسحب للأسفل للإغلاق
           </p>
         </div>
