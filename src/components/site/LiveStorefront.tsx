@@ -2,6 +2,7 @@ import Link from "next/link";
 import { IBM_Plex_Sans_Arabic } from "next/font/google";
 import { ArrowRight, ShoppingBag } from "lucide-react";
 import type { CatalogPage } from "@/lib/catalog-preview";
+import { KHANOM_ADDRESS } from "@/lib/storefront-config";
 import { PreviewCategoryLink, PreviewProductShelf } from "@/components/site/PreviewCatalog";
 import "@/app/preview/[variant]/[[...slug]]/preview.css";
 
@@ -11,8 +12,6 @@ const customerFont = IBM_Plex_Sans_Arabic({
   display: "swap",
   preload: false,
 });
-
-export const KHANOM_ADDRESS = "الكوت، حي الحوراء (زين القوس)، شارع الشيرازي، مقابل حسينية أبا الفضل";
 
 export interface StorefrontSection {
   id: number;
