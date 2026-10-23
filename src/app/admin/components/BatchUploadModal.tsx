@@ -4,7 +4,7 @@ import { useState } from "react";
 import { uploadBatchProducts } from "@/lib/client/upload";
 import { formatPrice } from "@/lib/format";
 import type { Category, Size } from "@/lib/queries";
-import { UploadCloud, X, Check, AlertCircle, Image as ImageIcon } from "lucide-react";
+import { UploadCloud, X, Check, AlertCircle, Image as ImageIcon, Camera } from "lucide-react";
 
 interface Props {
   categories: Category[];
@@ -13,6 +13,8 @@ interface Props {
   onClose: () => void;
   onSuccess: () => void;
 }
+
+const QUICK_PRICES = [5000, 10000, 15000, 20000, 25000, 30000, 35000, 40000, 50000];
 
 export default function BatchUploadModal({
   categories,
@@ -61,11 +63,23 @@ export default function BatchUploadModal({
     );
   };
 
+  // Quick Preset: Select standard clothing sizes S-XL
+  const selectStandardSizes = () => {
+    const stdSizes = sizes.filter((s) => ["S", "M", "L", "XL"].includes(s.name.trim().toUpperCase()));
+    setSelectedSizeIds(stdSizes.map((s) => s.id));
+  };
+
+  // Quick Preset: Free Size
+  const selectFreeSize = () => {
+    const free = sizes.find((s) => s.name.includes("Free") || s.name.includes("موحد"));
+    if (free) setSelectedSizeIds([free.id]);
+  };
+
   const handleStartUpload = async () => {
     setErrorMessage(null);
 
     if (files.length === 0) {
-      setErrorMessage("يرجى اختيار صورة واحدة على الأقل من الاستوديو");
+      setErrorMessage("يرجى اختيار صورة واحدة على الأقل من الاستوديو أو الكاميرا");
       return;
     }
 
@@ -96,7 +110,6 @@ export default function BatchUploadModal({
     setIsUploading(false);
 
     if (result.success) {
-      // Reset form and close
       setFiles([]);
       setDescription("");
       onSuccess();
@@ -108,17 +121,17 @@ export default function BatchUploadModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/80 backdrop-blur-sm overflow-y-auto">
-      <div className="w-full max-w-xl bg-slate-900 border border-slate-800 rounded-3xl p-5 md:p-6 shadow-2xl my-auto text-slate-100">
+      <div className="w-full max-w-xl bg-slate-900 border border-slate-800 rounded-3xl p-4 md:p-6 shadow-2xl my-auto text-slate-100">
         {/* Modal Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+        <div className="flex items-center justify-between pb-3.5 border-b border-slate-800">
           <div className="flex items-center gap-2.5">
             <div className="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-400 flex items-center justify-center border border-amber-500/20">
               <UploadCloud className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white">إضافة منتجات (رفع جماعي)</h2>
+              <h2 className="text-base sm:text-lg font-bold text-white">إضافة منتجات (رفع سريع)</h2>
               <p className="text-xs text-slate-400">
-                كل صورة يتم اختيارها ستتحول تلقائياً لمنتج مستقل
+                كل صورة يتم اختيارها تصبح قطعة مستقلة بالمخزن
               </p>
             </div>
           </div>
@@ -134,7 +147,7 @@ export default function BatchUploadModal({
 
         {/* Error message */}
         {errorMessage && (
-          <div className="mt-4 p-3 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-medium flex items-center gap-2">
+          <div className="mt-3 p-3 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-medium flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{errorMessage}</span>
           </div>
@@ -142,20 +155,20 @@ export default function BatchUploadModal({
 
         {/* Upload in progress state */}
         {isUploading ? (
-          <div className="py-12 px-4 text-center space-y-4">
+          <div className="py-10 px-4 text-center space-y-4">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30 animate-pulse">
               <UploadCloud className="w-8 h-8" />
             </div>
 
             <div className="space-y-1">
               <h3 className="text-base font-bold text-white">
-                {progressInfo.phase === "compressing" && "جاري تجهيز وضغط الصور في جهازك..."}
+                {progressInfo.phase === "compressing" && "جاري ضغط الصور وتجهيزها في جهازك..."}
                 {progressInfo.phase === "uploading" &&
                   `جاري رفع الصور (${progressInfo.current} من ${progressInfo.total})...`}
-                {progressInfo.phase === "saving" && "جاري حفظ المنتجات في قاعدة البيانات..."}
+                {progressInfo.phase === "saving" && "جاري الحفظ في قاعدة البيانات..."}
               </h3>
               <p className="text-xs text-slate-400">
-                يرجى الانتظار وعدم إغلاق الصفحة، يتم ضغط الصور لتوفير استهلاك باقة الإنترنت
+                يتم رفع الصور مباشرة إلى سحابة Cloudflare بسرعة فائقة
               </p>
             </div>
 
@@ -169,37 +182,48 @@ export default function BatchUploadModal({
             <span className="text-xs font-bold text-amber-400">{progressInfo.percent}%</span>
           </div>
         ) : (
-          <div className="mt-5 space-y-5">
-            {/* Image picker */}
+          <div className="mt-4 space-y-4">
+            {/* 1. Image Pickers (Gallery + Direct Camera) */}
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-2">
-                1. اختيار الصور من الاستوديو ({files.length} صورة مختارة)
+                1. اختيار الصور ({files.length} صورة مختارة)
               </label>
 
-              <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-slate-700 hover:border-amber-500/60 rounded-2xl cursor-pointer bg-slate-800/40 hover:bg-slate-800/80 transition">
-                <div className="flex flex-col items-center justify-center pt-2 pb-2">
-                  <ImageIcon className="w-7 h-7 text-amber-400 mb-1" />
-                  <p className="text-xs font-medium text-slate-300">
-                    انقر لاختيار مجموعة صور معاً
-                  </p>
-                  <p className="text-[11px] text-slate-500">يمكنك تحديد أي عدد من الصور</p>
-                </div>
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {/* Gallery Picker */}
+                <label className="flex flex-col items-center justify-center h-22 border-2 border-dashed border-slate-700 hover:border-amber-500/60 rounded-2xl cursor-pointer bg-slate-800/40 hover:bg-slate-800 transition">
+                  <ImageIcon className="w-6 h-6 text-amber-400 mb-1" />
+                  <span className="text-xs font-bold text-slate-200">الاستوديو (جماعي)</span>
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                </label>
+
+                {/* Direct Camera Capture */}
+                <label className="flex flex-col items-center justify-center h-22 border-2 border-dashed border-slate-700 hover:border-amber-500/60 rounded-2xl cursor-pointer bg-slate-800/40 hover:bg-slate-800 transition">
+                  <Camera className="w-6 h-6 text-emerald-400 mb-1" />
+                  <span className="text-xs font-bold text-slate-200">التقاط بالكاميرا</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                </label>
+              </div>
 
               {/* Thumbnails preview */}
               {files.length > 0 && (
-                <div className="mt-3 flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+                <div className="mt-2.5 flex gap-2 overflow-x-auto pb-1 no-scrollbar">
                   {files.map((file, i) => (
                     <div
                       key={i}
-                      className="relative w-16 h-16 rounded-xl overflow-hidden border border-slate-700 shrink-0 group"
+                      className="relative w-14 h-14 rounded-xl overflow-hidden border border-slate-700 shrink-0"
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
@@ -210,7 +234,7 @@ export default function BatchUploadModal({
                       <button
                         type="button"
                         onClick={() => removeFile(i)}
-                        className="absolute top-1 end-1 w-5 h-5 rounded-full bg-black/70 hover:bg-rose-600 text-white flex items-center justify-center transition"
+                        className="absolute top-1 end-1 w-4 h-4 rounded-full bg-black/80 text-white flex items-center justify-center"
                       >
                         <X className="w-3 h-3" />
                       </button>
@@ -220,10 +244,10 @@ export default function BatchUploadModal({
               )}
             </div>
 
-            {/* Category selection */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* 2. Category selection */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                <label className="block text-xs font-semibold text-slate-300 mb-1">
                   2. القسم الرئيسي
                 </label>
                 <select
@@ -233,9 +257,9 @@ export default function BatchUploadModal({
                     setSelectedParentId(val);
                     setSelectedSubId("");
                   }}
-                  className="w-full h-11 px-3 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs outline-none focus:border-amber-400"
+                  className="w-full h-10 px-3 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs outline-none focus:border-amber-400"
                 >
-                  <option value="">-- اختر القسم الرئيسي --</option>
+                  <option value="">-- اختر القسم --</option>
                   {mainCategories.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
@@ -245,16 +269,16 @@ export default function BatchUploadModal({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                <label className="block text-xs font-semibold text-slate-300 mb-1">
                   الفئة الفرعية
                 </label>
                 <select
                   value={selectedSubId}
                   disabled={!selectedParentId}
                   onChange={(e) => setSelectedSubId(e.target.value ? Number(e.target.value) : "")}
-                  className="w-full h-11 px-3 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs outline-none focus:border-amber-400 disabled:opacity-40"
+                  className="w-full h-10 px-3 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs outline-none focus:border-amber-400 disabled:opacity-40"
                 >
-                  <option value="">-- اختر الفئة الفرعية --</option>
+                  <option value="">-- اختر الفئة --</option>
                   {subCategories.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
@@ -264,31 +288,71 @@ export default function BatchUploadModal({
               </div>
             </div>
 
-            {/* Price input */}
+            {/* 3. Quick Price Chips + Manual Input */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-semibold text-slate-300">3. السعر للقطعة</label>
-                <span className="text-xs font-bold text-amber-400">
+                <label className="text-xs font-semibold text-slate-300">
+                  3. السعر (اختر بنقرة واحدة أو اكتب)
+                </label>
+                <span className="text-xs font-black text-amber-400">
                   {formatPrice(parseInt(price, 10) || 0)}
                 </span>
               </div>
+
+              {/* Quick Prices Chips */}
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {QUICK_PRICES.map((qp) => (
+                  <button
+                    key={qp}
+                    type="button"
+                    onClick={() => setPrice(qp.toString())}
+                    className={`h-7 px-2.5 rounded-lg text-xs font-bold transition border ${
+                      price === qp.toString()
+                        ? "bg-amber-500 text-slate-950 border-amber-400"
+                        : "bg-slate-800 text-slate-300 border-slate-700 hover:border-slate-600"
+                    }`}
+                  >
+                    {qp.toLocaleString()}
+                  </button>
+                ))}
+              </div>
+
               <input
                 type="number"
                 step="500"
                 min="0"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
-                placeholder="15000"
-                className="w-full h-11 px-3 rounded-xl bg-slate-800 border border-slate-700 text-white text-base outline-none focus:border-amber-400"
+                placeholder="أدخل السعر مخصص..."
+                className="w-full h-10 px-3 rounded-xl bg-slate-800 border border-slate-700 text-white text-sm outline-none focus:border-amber-400"
               />
             </div>
 
-            {/* Sizes picker */}
+            {/* 4. Sizes Picker + Quick Presets */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-2">
-                4. القياسات المتوفرة (انقر للتحديد)
-              </label>
-              <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto p-1 bg-slate-800/40 rounded-2xl border border-slate-800">
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-semibold text-slate-300">
+                  4. القياسات المتوفرة
+                </label>
+                <div className="flex gap-1.5">
+                  <button
+                    type="button"
+                    onClick={selectStandardSizes}
+                    className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-amber-300"
+                  >
+                    شائع (S-XL)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={selectFreeSize}
+                    className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-amber-300"
+                  >
+                    قياس موحد
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto p-1 bg-slate-800/40 rounded-xl border border-slate-800">
                 {sizes.map((s) => {
                   const isSelected = selectedSizeIds.includes(s.id);
                   return (
@@ -296,13 +360,13 @@ export default function BatchUploadModal({
                       key={s.id}
                       type="button"
                       onClick={() => toggleSize(s.id)}
-                      className={`h-8 px-3 rounded-xl text-xs font-medium transition flex items-center gap-1.5 border ${
+                      className={`h-7 px-2.5 rounded-lg text-xs font-medium transition flex items-center gap-1 border ${
                         isSelected
-                          ? "bg-amber-500 text-slate-950 border-amber-400 font-bold shadow-sm"
+                          ? "bg-amber-500 text-slate-950 border-amber-400 font-bold"
                           : "bg-slate-800 text-slate-300 border-slate-700 hover:border-slate-600"
                       }`}
                     >
-                      {isSelected && <Check className="w-3.5 h-3.5" />}
+                      {isSelected && <Check className="w-3 h-3" />}
                       <span>{s.name}</span>
                     </button>
                   );
@@ -310,38 +374,24 @@ export default function BatchUploadModal({
               </div>
             </div>
 
-            {/* Optional description */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                5. وصف أو ملاحظات (اختياري)
-              </label>
-              <input
-                type="text"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="مثال: قماش كوري درجة أولى، ألوان متعددة"
-                className="w-full h-11 px-3 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs outline-none focus:border-amber-400"
-              />
-            </div>
-
             {/* Submit button */}
-            <div className="pt-2 flex gap-3">
+            <div className="pt-2 flex gap-2">
               <button
                 type="button"
                 onClick={handleStartUpload}
                 disabled={files.length === 0 || !selectedSubId}
-                className="flex-1 h-12 rounded-2xl bg-amber-500 hover:bg-amber-400 active:scale-[0.98] text-slate-950 font-bold text-sm shadow-lg shadow-amber-500/20 transition flex items-center justify-center gap-2 disabled:opacity-40"
+                className="flex-1 h-12 rounded-2xl bg-amber-500 hover:bg-amber-400 active:scale-[0.98] text-slate-950 font-black text-sm shadow-lg shadow-amber-500/20 transition flex items-center justify-center gap-2 disabled:opacity-40"
               >
                 <UploadCloud className="w-5 h-5" />
                 <span>
-                  رفع {files.length > 0 ? `(${files.length}) منتجات` : "المنتجات الآن"}
+                  رفع {files.length > 0 ? `(${files.length}) منتجات الآن` : "المنتجات"}
                 </span>
               </button>
 
               <button
                 type="button"
                 onClick={onClose}
-                className="h-12 px-5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-semibold transition"
+                className="h-12 px-4 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition"
               >
                 إلغاء
               </button>

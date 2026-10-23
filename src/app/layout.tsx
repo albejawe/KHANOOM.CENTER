@@ -4,16 +4,23 @@ import "./globals.css";
 
 const arabicFont = Noto_Sans_Arabic({
   subsets: ["arabic"],
-  weight: ["400", "500", "600", "700", "800"],
+  weight: ["400", "500", "600", "700", "800", "900"],
   variable: "--font-arabic",
   display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "مجمع خانم - المعرض الرقمي",
-  description: "المعرض الرقمي لمنتجات مجمع خانم - ملابس نسائية، ملابس أطفال، ومستحضرات تجميل",
+  title: "مجمع خانم - أزياء وكوزمتكس",
+  description: "المعرض الرقمي لمنتجات مجمع خانم - ملابس نسائية وأطفال ومستحضرات تجميل",
+  manifest: "/manifest.json",
   icons: {
-    icon: "/favicon.ico",
+    icon: "/icon.svg",
+    apple: "/icon.svg",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "مجمع خانم",
   },
 };
 
@@ -33,7 +40,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ar" dir="rtl" className={`${arabicFont.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col bg-slate-50 text-slate-900 pb-[env(safe-area-inset-bottom)]">
+      <body className="min-h-full flex flex-col bg-slate-50 text-slate-900 pb-[env(safe-area-inset-bottom)] select-none">
         {children}
       </body>
     </html>

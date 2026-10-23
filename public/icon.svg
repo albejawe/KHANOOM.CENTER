@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#1e293b" />
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24" />
+      <stop offset="100%" stop-color="#d97706" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="128" fill="url(#bgGrad)" />
+  <circle cx="256" cy="256" r="180" stroke="url(#goldGrad)" stroke-width="12" fill="none" opacity="0.3" />
+  <!-- Elegant Arabic Letter Kha / Crown Motif -->
+  <path d="M256 140 C270 140 280 150 280 164 C280 178 270 188 256 188 C242 188 232 178 232 164 C232 150 242 140 256 140 Z" fill="url(#goldGrad)" />
+  <path d="M160 270 C200 230 312 230 352 270 C310 260 290 280 270 310 C250 340 220 360 180 350 C150 342 140 310 160 270 Z" fill="url(#goldGrad)" />
+</svg>

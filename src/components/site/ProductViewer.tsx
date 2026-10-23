@@ -1,11 +1,19 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
 import { imageUrl } from "@/lib/images";
 import { formatPrice } from "@/lib/format";
 import type { Product } from "@/lib/queries";
-import { X, ChevronRight, ChevronLeft, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
+import {
+  X,
+  ChevronRight,
+  ChevronLeft,
+  ZoomIn,
+  ZoomOut,
+  Share2,
+  Check,
+  MessageCircle,
+} from "lucide-react";
 
 interface Props {
   products: Product[];
@@ -18,9 +26,6 @@ export default function ProductViewer({
   initialProductId,
   onClose,
 }: Props) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-
   // Find index of the currently open product
   const [currentIndex, setCurrentIndex] = useState<number>(() => {
     if (!initialProductId) return 0;
@@ -29,13 +34,15 @@ export default function ProductViewer({
   });
 
   const [scale, setScale] = useState(1);
-  const [touchStart, setTouchStart] = useState<number | null>(null);
-  const [touchDelta, setTouchDelta] = useState<number>(0);
-  const imageContainerRef = useRef<HTMLDivElement>(null);
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [touchStartY, setTouchStartY] = useState<number | null>(null);
+  const [touchDeltaX, setTouchDeltaX] = useState<number>(0);
+  const [touchDeltaY, setTouchDeltaY] = useState<number>(0);
+  const [isCopied, setIsCopied] = useState(false);
 
   const currentProduct = products[currentIndex];
 
-  // Update URL searchParam ?p=[id] when product changes
+  // Sync URL ?p=[id]
   useEffect(() => {
     if (currentProduct) {
       const url = new URL(window.location.href);
@@ -44,7 +51,16 @@ export default function ProductViewer({
     }
   }, [currentProduct]);
 
-  // Handle keyboard arrow navigation
+  // Handle hardware / browser back button to close modal
+  useEffect(() => {
+    const handlePopState = () => {
+      onClose();
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [onClose]);
+
+  // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -55,18 +71,19 @@ export default function ProductViewer({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [currentIndex, products.length]);
 
-  // Preload adjacent images
+  // Preload adjacent full resolution images
   useEffect(() => {
+    if (products.length <= 1) return;
     const nextIdx = (currentIndex + 1) % products.length;
     const prevIdx = (currentIndex - 1 + products.length) % products.length;
 
     if (products[nextIdx]) {
-      const img = new Image();
-      img.src = imageUrl(products[nextIdx].image_key, "full");
+      const img1 = new Image();
+      img1.src = imageUrl(products[nextIdx].image_key, "full");
     }
     if (products[prevIdx]) {
-      const img = new Image();
-      img.src = imageUrl(products[prevIdx].image_key, "full");
+      const img2 = new Image();
+      img2.src = imageUrl(products[prevIdx].image_key, "full");
     }
   }, [currentIndex, products]);
 
@@ -80,29 +97,43 @@ export default function ProductViewer({
     setCurrentIndex((prev) => (prev - 1 >= 0 ? prev - 1 : products.length - 1));
   }, [products.length]);
 
-  // Touch Swipe handlers
+  // Touch Swipe Handlers (supports both horizontal swipe and swipe-down-to-dismiss)
   const onTouchStart = (e: React.TouchEvent) => {
     if (scale > 1) return; // Disable swipe while zoomed
-    setTouchStart(e.targetTouches[0].clientX);
-    setTouchDelta(0);
+    setTouchStartX(e.targetTouches[0].clientX);
+    setTouchStartY(e.targetTouches[0].clientY);
+    setTouchDeltaX(0);
+    setTouchDeltaY(0);
   };
 
   const onTouchMove = (e: React.TouchEvent) => {
-    if (touchStart === null || scale > 1) return;
+    if (touchStartX === null || touchStartY === null || scale > 1) return;
     const currentX = e.targetTouches[0].clientX;
-    setTouchDelta(currentX - touchStart);
+    const currentY = e.targetTouches[0].clientY;
+    setTouchDeltaX(currentX - touchStartX);
+    setTouchDeltaY(currentY - touchStartY);
   };
 
   const onTouchEnd = () => {
-    if (touchStart === null || scale > 1) return;
-    // In RTL, dragging right (positive delta) = previous, dragging left (negative delta) = next
-    if (touchDelta > 60) {
+    if (touchStartX === null || scale > 1) return;
+
+    // Swipe down to dismiss gesture (> 90px downwards)
+    if (touchDeltaY > 90 && Math.abs(touchDeltaX) < 100) {
+      handleClose();
+      return;
+    }
+
+    // Horizontal swipe gesture (> 50px)
+    if (touchDeltaX > 50) {
       handleNext();
-    } else if (touchDelta < -60) {
+    } else if (touchDeltaX < -50) {
       handlePrev();
     }
-    setTouchStart(null);
-    setTouchDelta(0);
+
+    setTouchStartX(null);
+    setTouchStartY(null);
+    setTouchDeltaX(0);
+    setTouchDeltaY(0);
   };
 
   const handleClose = () => {
@@ -113,43 +144,94 @@ export default function ProductViewer({
   };
 
   const toggleZoom = () => {
-    setScale((prev) => (prev === 1 ? 2.2 : 1));
+    setScale((prev) => (prev === 1 ? 2.3 : 1));
+  };
+
+  // WhatsApp 1-tap direct inquiry message
+  const handleWhatsAppInquiry = () => {
+    if (!currentProduct) return;
+    const sizesText =
+      currentProduct.sizes && currentProduct.sizes.length > 0
+        ? currentProduct.sizes.map((s) => s.name).join("، ")
+        : "قياس موحد";
+    const text = `مرحباً مجمع خانم، أود الاستفسار عن هذا الموديل:\n- كود القطعة: #${currentProduct.id}\n- السعر: ${formatPrice(currentProduct.price)}\n- القياسات: ${sizesText}\n- رابط القطعة:\n${window.location.href}`;
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, "_blank");
+  };
+
+  // Quick Share / Copy Link
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `مجمع خانم - موديل #${currentProduct.id}`,
+          text: `شاهد هذا الموديل من مجمع خانم بسعر ${formatPrice(currentProduct.price)}`,
+          url: window.location.href,
+        });
+        return;
+      } catch {
+        // Fallback to clipboard
+      }
+    }
+
+    await navigator.clipboard.writeText(window.location.href);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2500);
   };
 
   if (!currentProduct) return null;
 
+  // Swipe-down transform calculation for TikTok-style fluid dismiss
+  const dismissOpacity = touchDeltaY > 0 ? Math.max(0.3, 1 - touchDeltaY / 300) : 1;
+  const dismissScale = touchDeltaY > 0 ? Math.max(0.8, 1 - touchDeltaY / 600) : scale;
+
   return (
-    <div className="fixed inset-0 z-50 bg-black/95 flex flex-col justify-between text-white select-none backdrop-blur-md">
+    <div
+      style={{ opacity: dismissOpacity }}
+      className="fixed inset-0 z-50 bg-black flex flex-col justify-between text-white select-none transition-opacity duration-150"
+    >
       {/* Top Floating Control Bar */}
-      <div className="flex items-center justify-between p-4 z-20">
+      <div className="flex items-center justify-between p-3.5 pt-safe z-30 bg-gradient-to-b from-black/80 via-black/40 to-transparent">
+        {/* Counter and Zoom Button */}
         <div className="flex items-center gap-2">
-          <span className="text-xs font-bold px-3 py-1 rounded-full bg-white/10 backdrop-blur border border-white/15">
-            {currentIndex + 1} من {products.length}
+          <span className="text-xs font-black px-3 py-1 rounded-full bg-white/15 backdrop-blur border border-white/20">
+            {currentIndex + 1} / {products.length}
           </span>
+
           <button
             type="button"
             onClick={toggleZoom}
-            className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition border border-white/15"
+            className="w-9 h-9 rounded-full bg-white/15 hover:bg-white/25 active:scale-95 flex items-center justify-center transition border border-white/20"
             title={scale > 1 ? "تصغير" : "تكبير"}
           >
             {scale > 1 ? <ZoomOut className="w-4 h-4" /> : <ZoomIn className="w-4 h-4" />}
           </button>
         </div>
 
-        {/* Large Close Button */}
-        <button
-          type="button"
-          onClick={handleClose}
-          className="w-11 h-11 rounded-full bg-white/15 hover:bg-rose-600 active:scale-90 text-white flex items-center justify-center transition border border-white/20 shadow-lg"
-          aria-label="إغلاق"
-        >
-          <X className="w-6 h-6 stroke-[2.5]" />
-        </button>
+        {/* Share and Close Actions */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleShare}
+            className="h-9 px-3 rounded-full bg-white/15 hover:bg-white/25 active:scale-95 text-xs font-bold flex items-center gap-1.5 transition border border-white/20"
+            title="مشاركة الرابط"
+          >
+            {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Share2 className="w-3.5 h-3.5" />}
+            <span>{isCopied ? "تم النسخ" : "مشاركة"}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleClose}
+            className="w-10 h-10 rounded-full bg-white/20 hover:bg-rose-600 active:scale-90 text-white flex items-center justify-center transition border border-white/25 shadow-lg"
+            aria-label="إغلاق"
+          >
+            <X className="w-6 h-6 stroke-[2.5]" />
+          </button>
+        </div>
       </div>
 
-      {/* Main Image Stage with Swipe Gestures */}
+      {/* Main Image Stage (Edge to Edge with Touch Gestures) */}
       <div
-        ref={imageContainerRef}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
@@ -161,22 +243,22 @@ export default function ProductViewer({
           <button
             type="button"
             onClick={handlePrev}
-            className="absolute start-3 z-20 w-11 h-11 rounded-full bg-black/50 hover:bg-black/80 active:scale-95 text-white flex items-center justify-center transition border border-white/15 backdrop-blur-sm"
+            className="absolute start-2 z-20 w-11 h-11 rounded-full bg-black/60 hover:bg-black/90 active:scale-90 text-white flex items-center justify-center transition border border-white/20 backdrop-blur"
             aria-label="السابق"
           >
             <ChevronRight className="w-6 h-6" />
           </button>
         )}
 
-        {/* The Full Resolution Image */}
+        {/* The Full High-Detail Image */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           key={currentProduct.id}
           src={imageUrl(currentProduct.image_key, "full")}
           alt={`Product ${currentProduct.id}`}
           style={{
-            transform: `scale(${scale}) translateX(${touchDelta * 0.4}px)`,
-            transition: touchStart === null ? "transform 0.25s ease-out" : "none",
+            transform: `translate(${touchDeltaX * 0.4}px, ${touchDeltaY > 0 ? touchDeltaY : 0}px) scale(${dismissScale})`,
+            transition: touchStartX === null ? "transform 0.22s ease-out" : "none",
           }}
           className="max-h-full max-w-full object-contain cursor-zoom-in"
         />
@@ -186,7 +268,7 @@ export default function ProductViewer({
           <button
             type="button"
             onClick={handleNext}
-            className="absolute end-3 z-20 w-11 h-11 rounded-full bg-black/50 hover:bg-black/80 active:scale-95 text-white flex items-center justify-center transition border border-white/15 backdrop-blur-sm"
+            className="absolute end-2 z-20 w-11 h-11 rounded-full bg-black/60 hover:bg-black/90 active:scale-90 text-white flex items-center justify-center transition border border-white/20 backdrop-blur"
             aria-label="التالي"
           >
             <ChevronLeft className="w-6 h-6" />
@@ -194,30 +276,37 @@ export default function ProductViewer({
         )}
       </div>
 
-      {/* Bottom Product Details Bar */}
-      <div className="z-20 p-4 pb-6 bg-gradient-to-t from-black via-black/90 to-transparent">
-        <div className="max-w-md mx-auto space-y-2.5">
-          {/* Price & Name */}
+      {/* Bottom Sticky Card with Price, Sizes, and 1-Tap WhatsApp Inquiry */}
+      <div className="z-30 p-4 pb-safe bg-gradient-to-t from-black via-black/95 to-transparent">
+        <div className="max-w-md mx-auto space-y-3">
+          {/* Price & Category info */}
           <div className="flex items-center justify-between">
-            <span className="text-2xl font-black text-amber-400 drop-shadow">
-              {formatPrice(currentProduct.price)}
-            </span>
-            <span className="text-xs font-semibold text-slate-300">
-              {currentProduct.category_name}
+            <div>
+              <span className="text-xs text-slate-400 block font-medium">
+                {currentProduct.parent_category_name ? `${currentProduct.parent_category_name} • ` : ""}
+                {currentProduct.category_name}
+              </span>
+              <span className="text-2xl sm:text-3xl font-black text-amber-400 drop-shadow">
+                {formatPrice(currentProduct.price)}
+              </span>
+            </div>
+
+            <span className="text-xs font-mono font-bold px-2 py-1 rounded-lg bg-white/10 text-slate-300">
+              #{currentProduct.id}
             </span>
           </div>
 
-          {/* Sizes Pills */}
+          {/* Available Sizes Pills */}
           {currentProduct.sizes && currentProduct.sizes.length > 0 && (
-            <div className="space-y-1">
-              <span className="text-[11px] font-semibold text-slate-400 block">
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
+              <span className="text-xs font-semibold text-slate-300 shrink-0">
                 القياسات المتوفرة:
               </span>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex gap-1.5 shrink-0">
                 {currentProduct.sizes.map((s) => (
                   <span
                     key={s.id}
-                    className="text-xs font-bold px-3 py-1 rounded-xl bg-white/15 border border-white/20 text-white backdrop-blur shadow-xs"
+                    className="text-xs font-bold px-3 py-1 rounded-xl bg-amber-500/20 border border-amber-400/40 text-amber-300 backdrop-blur"
                   >
                     {s.name}
                   </span>
@@ -228,16 +317,24 @@ export default function ProductViewer({
 
           {/* Description */}
           {currentProduct.description && (
-            <p className="text-xs text-slate-300 leading-relaxed pt-1 border-t border-white/10">
+            <p className="text-xs text-slate-300 leading-relaxed pt-1 border-t border-white/10 line-clamp-2">
               {currentProduct.description}
             </p>
           )}
 
-          <div className="text-center pt-1">
-            <span className="text-[10px] text-slate-500 font-medium">
-              اسحب يمين أو يسار لرؤية باقي القطع • انقر مرتين للتكبير
-            </span>
-          </div>
+          {/* 1-Tap WhatsApp Direct Inquiry Button */}
+          <button
+            type="button"
+            onClick={handleWhatsAppInquiry}
+            className="w-full h-13 rounded-2xl bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white font-black text-sm shadow-lg shadow-emerald-900/40 transition flex items-center justify-center gap-2.5"
+          >
+            <MessageCircle className="w-5 h-5 fill-current" />
+            <span>طلب أو استفسار عن هذا الموديل عبر واتساب</span>
+          </button>
+
+          <p className="text-[10px] text-center text-slate-400 pt-0.5">
+            اسحب لليمين أو اليسار للتنقل • اسحب للأسفل للإغلاق
+          </p>
         </div>
       </div>
     </div>

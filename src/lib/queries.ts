@@ -284,3 +284,69 @@ export async function getAdminStats() {
     totalSizes: Number(sizesRes.rows[0].count),
   };
 }
+
+/**
+ * Returns all visible products across the catalog with full category and size data.
+ * Ideal for high-speed instant client-side filtering (0ms latency switching between tabs).
+ */
+export async function getAllVisibleCatalog(): Promise<{
+  mainCategories: Category[];
+  subCategories: Category[];
+  products: Product[];
+}> {
+  const [mainRes, subRes, prodRes] = await Promise.all([
+    db.execute("SELECT * FROM categories WHERE parent_id IS NULL ORDER BY sort_order ASC, id ASC"),
+    db.execute("SELECT * FROM categories WHERE parent_id IS NOT NULL ORDER BY sort_order ASC, id ASC"),
+    db.execute(`
+      SELECT p.id, p.category_id, p.price, p.description, p.image_key, p.is_hidden, p.created_at,
+             c.name as category_name, c.parent_id as parent_category_id,
+             pcat.name as parent_category_name
+      FROM products p
+      JOIN categories c ON p.category_id = c.id
+      LEFT JOIN categories pcat ON c.parent_id = pcat.id
+      WHERE p.is_hidden = 0
+      ORDER BY p.id DESC
+    `),
+  ]);
+
+  const mainCategories = mainRes.rows as unknown as Category[];
+  const subCategories = subRes.rows as unknown as Category[];
+  const products = prodRes.rows as unknown as Product[];
+
+  if (products.length > 0) {
+    const productIds = products.map((p) => p.id);
+    const placeholders = productIds.map(() => "?").join(",");
+    const sizesRes = await db.execute({
+      sql: `
+        SELECT ps.product_id, s.id, s.name, s.sort_order
+        FROM product_sizes ps
+        JOIN sizes s ON ps.size_id = s.id
+        WHERE ps.product_id IN (${placeholders})
+        ORDER BY s.sort_order ASC, s.id ASC
+      `,
+      args: productIds,
+    });
+
+    const sizesMap = new Map<number, Size[]>();
+    for (const row of sizesRes.rows) {
+      const pId = Number(row.product_id);
+      const size: Size = {
+        id: Number(row.id),
+        name: String(row.name),
+        sort_order: Number(row.sort_order),
+      };
+      if (!sizesMap.has(pId)) sizesMap.set(pId, []);
+      sizesMap.get(pId)!.push(size);
+    }
+
+    for (const product of products) {
+      product.sizes = sizesMap.get(product.id) || [];
+    }
+  }
+
+  return {
+    mainCategories,
+    subCategories,
+    products,
+  };
+}

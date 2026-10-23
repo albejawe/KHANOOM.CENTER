@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { updateProductAction, deleteProductAction, toggleProductHiddenAction } from "@/app/actions/products";
+import { updateProductAction, deleteProductAction } from "@/app/actions/products";
 import { formatPrice } from "@/lib/format";
 import { imageUrl } from "@/lib/images";
 import type { Category, Size, Product } from "@/lib/queries";
@@ -15,6 +15,8 @@ interface Props {
   onClose: () => void;
   onSuccess: () => void;
 }
+
+const QUICK_PRICES = [5000, 10000, 15000, 20000, 25000, 30000, 35000, 40000, 50000];
 
 export default function ProductEditModal({
   product,
@@ -90,9 +92,9 @@ export default function ProductEditModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/80 backdrop-blur-sm overflow-y-auto">
-      <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl p-5 md:p-6 shadow-2xl my-auto text-slate-100">
-        <div className="flex items-center justify-between pb-4 border-b border-slate-800">
-          <h2 className="text-base font-bold text-white">تعديل المنتج #{product.id}</h2>
+      <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl p-4 md:p-6 shadow-2xl my-auto text-slate-100">
+        <div className="flex items-center justify-between pb-3.5 border-b border-slate-800">
+          <h2 className="text-base font-bold text-white">تعديل القطعة #{product.id}</h2>
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition"
@@ -102,16 +104,16 @@ export default function ProductEditModal({
         </div>
 
         {errorMessage && (
-          <div className="mt-4 p-3 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-medium flex items-center gap-2">
+          <div className="mt-3 p-3 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-medium flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{errorMessage}</span>
           </div>
         )}
 
-        <div className="mt-4 space-y-4">
-          {/* Image & Hide/Show Toggle */}
-          <div className="flex items-center gap-4 p-3 bg-slate-800/40 rounded-2xl border border-slate-800">
-            <div className="w-16 h-16 rounded-xl overflow-hidden bg-slate-800 shrink-0">
+        <div className="mt-3.5 space-y-3.5">
+          {/* Image & Quick Hide/Show Toggle */}
+          <div className="flex items-center gap-3.5 p-2.5 bg-slate-800/40 rounded-2xl border border-slate-800">
+            <div className="w-14 h-14 rounded-xl overflow-hidden bg-slate-800 shrink-0">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={imageUrl(product.image_key, "thumb")}
@@ -121,24 +123,24 @@ export default function ProductEditModal({
             </div>
 
             <div className="flex-1">
-              <span className="text-xs text-slate-400 block mb-1">حالة الظهور للزوار:</span>
+              <span className="text-[11px] text-slate-400 block mb-1">حالة الظهور للزوار:</span>
               <button
                 type="button"
                 onClick={() => setIsHidden(!isHidden)}
-                className={`h-9 px-3.5 rounded-xl text-xs font-bold transition inline-flex items-center gap-1.5 border ${
+                className={`h-8 px-3 rounded-xl text-xs font-bold transition inline-flex items-center gap-1.5 border ${
                   isHidden
-                    ? "bg-rose-500/10 text-rose-400 border-rose-500/30"
-                    : "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                    ? "bg-rose-500/15 text-rose-400 border-rose-500/30"
+                    : "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
                 }`}
               >
                 {isHidden ? (
                   <>
-                    <EyeOff className="w-4 h-4" />
+                    <EyeOff className="w-3.5 h-3.5" />
                     <span>مخفي (لا يظهر للزوار)</span>
                   </>
                 ) : (
                   <>
-                    <Eye className="w-4 h-4" />
+                    <Eye className="w-3.5 h-3.5" />
                     <span>ظاهر للزوار بالموقع</span>
                   </>
                 )}
@@ -148,13 +150,13 @@ export default function ProductEditModal({
 
           {/* Subcategory */}
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+            <label className="block text-xs font-semibold text-slate-300 mb-1">
               الفئة الفرعية
             </label>
             <select
               value={selectedCategoryId}
               onChange={(e) => setSelectedCategoryId(Number(e.target.value))}
-              className="w-full h-11 px-3 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs outline-none focus:border-amber-400"
+              className="w-full h-10 px-3 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs outline-none focus:border-amber-400"
             >
               {subCategories.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -164,30 +166,48 @@ export default function ProductEditModal({
             </select>
           </div>
 
-          {/* Price */}
+          {/* Price with Quick Chips */}
           <div>
-            <div className="flex items-center justify-between mb-1.5">
+            <div className="flex items-center justify-between mb-1">
               <label className="text-xs font-semibold text-slate-300">السعر</label>
-              <span className="text-xs font-bold text-amber-400">
+              <span className="text-xs font-black text-amber-400">
                 {formatPrice(parseInt(price, 10) || 0)}
               </span>
             </div>
+
+            <div className="flex flex-wrap gap-1 mb-1.5">
+              {QUICK_PRICES.map((qp) => (
+                <button
+                  key={qp}
+                  type="button"
+                  onClick={() => setPrice(qp.toString())}
+                  className={`h-6 px-2 rounded-lg text-[11px] font-bold transition border ${
+                    price === qp.toString()
+                      ? "bg-amber-500 text-slate-950 border-amber-400"
+                      : "bg-slate-800 text-slate-300 border-slate-700 hover:border-slate-600"
+                  }`}
+                >
+                  {qp.toLocaleString()}
+                </button>
+              ))}
+            </div>
+
             <input
               type="number"
               step="500"
               min="0"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
-              className="w-full h-11 px-3 rounded-xl bg-slate-800 border border-slate-700 text-white text-base outline-none focus:border-amber-400"
+              className="w-full h-10 px-3 rounded-xl bg-slate-800 border border-slate-700 text-white text-sm outline-none focus:border-amber-400"
             />
           </div>
 
           {/* Sizes */}
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-2">
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
               القياسات المتوفرة
             </label>
-            <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto p-1 bg-slate-800/40 rounded-2xl border border-slate-800">
+            <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto p-1 bg-slate-800/40 rounded-xl border border-slate-800">
               {sizes.map((s) => {
                 const isSelected = selectedSizeIds.includes(s.id);
                 return (
@@ -195,13 +215,13 @@ export default function ProductEditModal({
                     key={s.id}
                     type="button"
                     onClick={() => toggleSize(s.id)}
-                    className={`h-8 px-3 rounded-xl text-xs font-medium transition flex items-center gap-1.5 border ${
+                    className={`h-7 px-2.5 rounded-lg text-xs font-medium transition flex items-center gap-1 border ${
                       isSelected
                         ? "bg-amber-500 text-slate-950 border-amber-400 font-bold"
                         : "bg-slate-800 text-slate-300 border-slate-700 hover:border-slate-600"
                     }`}
                   >
-                    {isSelected && <Check className="w-3.5 h-3.5" />}
+                    {isSelected && <Check className="w-3 h-3" />}
                     <span>{s.name}</span>
                   </button>
                 );
@@ -211,19 +231,19 @@ export default function ProductEditModal({
 
           {/* Description */}
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+            <label className="block text-xs font-semibold text-slate-300 mb-1">
               الوصف (اختياري)
             </label>
-            <textarea
-              rows={2}
+            <input
+              type="text"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="وصف القطعة..."
-              className="w-full p-3 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs outline-none focus:border-amber-400 resize-none"
+              className="w-full h-10 px-3 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs outline-none focus:border-amber-400"
             />
           </div>
 
-          {/* Action buttons */}
+          {/* Actions */}
           <div className="pt-2 flex flex-col sm:flex-row gap-2">
             <button
               type="button"
