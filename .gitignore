@@ -1,0 +1,19 @@
+﻿# secrets - NEVER commit
+ENV.txt
+.env*
+!.env.example
+
+# deps / build
+node_modules/
+.next/
+out/
+build/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+.vercel/
+
+# os
+.DS_Store
+Thumbs.db
+
