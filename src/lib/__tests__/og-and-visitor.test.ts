@@ -6,7 +6,7 @@ import { formatPrice } from "../format";
 
 const PROJECT_ROOT = join(process.cwd());
 
-describe("Requirement 1: Complete removal of Admin entry from Visitor UI", () => {
+describe("Requirement 1: Clean Visitor UI and No Welcome Banner", () => {
   it("ensures no admin links or buttons exist in visitor pages and components", () => {
     const visitorFiles = [
       "src/app/page.tsx",
@@ -31,6 +31,11 @@ describe("Requirement 1: Complete removal of Admin entry from Visitor UI", () =>
     }
   });
 
+  it("ensures the welcome banner is completely removed from HomePage", () => {
+    const homeContent = readFileSync(join(PROJECT_ROOT, "src/app/page.tsx"), "utf-8");
+    expect(homeContent).not.toContain("أهلاً بكم في مجمع خانم");
+  });
+
   it("ensures WhatsApp inquiry button is completely removed from ProductViewer", () => {
     const viewerContent = readFileSync(
       join(PROJECT_ROOT, "src/components/site/ProductViewer.tsx"),
@@ -41,7 +46,7 @@ describe("Requirement 1: Complete removal of Admin entry from Visitor UI", () =>
   });
 });
 
-describe("Requirement 2: Dynamic OG Images for Home and Categories", () => {
+describe("Requirement 2: Dynamic OG Images with Clean RTL Typography", () => {
   it("ensures Cairo-Bold font is present locally and in public", () => {
     const assetFont = join(PROJECT_ROOT, "src/assets/fonts/Cairo-Bold.ttf");
     const publicFont = join(PROJECT_ROOT, "public/fonts/Cairo-Bold.ttf");
@@ -52,23 +57,30 @@ describe("Requirement 2: Dynamic OG Images for Home and Categories", () => {
   it("verifies home page OG configuration contains 'انقر هنا لمشاهدة جميع المنتجات'", () => {
     const homeContent = readFileSync(join(PROJECT_ROOT, "src/app/page.tsx"), "utf-8");
     expect(homeContent).toContain("انقر هنا لمشاهدة جميع المنتجات");
-    expect(homeContent).toContain("/api/og?title=");
+    expect(homeContent).toContain("/api/og?");
   });
 
   it("verifies category page OG configuration contains dynamic category title", () => {
     const catContent = readFileSync(join(PROJECT_ROOT, "src/app/c/[id]/page.tsx"), "utf-8");
     expect(catContent).toContain("انقر هنا لمشاهدة ${category.name}");
-    expect(catContent).toContain("/api/og?title=");
+    expect(catContent).toContain("/api/og?");
   });
 
   it("verifies subcategory page OG configuration contains dynamic subcategory title when ?p= is absent", () => {
     const subcatContent = readFileSync(join(PROJECT_ROOT, "src/app/s/[id]/page.tsx"), "utf-8");
     expect(subcatContent).toContain("انقر هنا لمشاهدة ${category.name}");
-    expect(subcatContent).toContain("/api/og?title=");
+    expect(subcatContent).toContain("/api/og?");
+  });
+
+  it("ensures OG route handles RTL word sequence reversal to fix reversed text", () => {
+    const ogRoute = readFileSync(join(PROJECT_ROOT, "src/app/api/og/route.tsx"), "utf-8");
+    expect(ogRoute).toContain("fixArabicRtl");
+    expect(ogRoute).toContain(".split(/\\s+/).reverse().join(\" \")");
+    expect(ogRoute).toContain("انقر هنا لمشاهدة");
   });
 });
 
-describe("Requirement 3: Dynamic OG for Shared Single Product Link (?p=...)", () => {
+describe("Requirement 3: Speed Optimization and Product Sharing", () => {
   it("verifies that sharing a product (?p=...) uses the direct full-resolution image from R2", () => {
     const sampleProduct = {
       id: 1,
@@ -85,9 +97,16 @@ describe("Requirement 3: Dynamic OG for Shared Single Product Link (?p=...)", ()
     expect(formatPrice(sampleProduct.price)).toBe("35,000 د.ع");
 
     const subcatContent = readFileSync(join(PROJECT_ROOT, "src/app/s/[id]/page.tsx"), "utf-8");
-    // Verifies logic exists in s/[id]/page.tsx
     expect(subcatContent).toContain("imageUrl(product.image_key, \"full\")");
     expect(subcatContent).toContain("searchParams");
     expect(subcatContent).toContain("productParam");
+  });
+
+  it("verifies single-query loaders are used to eliminate query waterfalls", () => {
+    const homeContent = readFileSync(join(PROJECT_ROOT, "src/app/page.tsx"), "utf-8");
+    const catContent = readFileSync(join(PROJECT_ROOT, "src/app/c/[id]/page.tsx"), "utf-8");
+
+    expect(homeContent).toContain("getMainCategoriesWithDetails()");
+    expect(catContent).toContain("getSubcategoriesWithDetails(parentId)");
   });
 });

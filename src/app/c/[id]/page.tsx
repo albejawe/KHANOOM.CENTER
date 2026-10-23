@@ -2,12 +2,12 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import {
   getCategoryById,
-  getSubcategories,
-  getCategoryCoverKey,
-  getProductsForSubcategory,
+  getSubcategoriesWithDetails,
 } from "@/lib/queries";
 import SiteHeader from "@/components/site/SiteHeader";
 import CategoryCard from "@/components/site/CategoryCard";
+
+// Ultra-fast single SQL query to load all subcategories with counts and covers
 
 export const instant = false;
 
@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!category) return {};
 
   const ctaText = `انقر هنا لمشاهدة ${category.name}`;
-  const ogImageUrl = `/api/og?title=${encodeURIComponent(ctaText)}&subtitle=${encodeURIComponent("مجمع خانم للأزياء والكوزمتكس")}`;
+  const ogImageUrl = `/api/og?cat=${encodeURIComponent(category.name)}`;
 
   return {
     title: `${ctaText} | مجمع خانم`,
@@ -63,27 +63,13 @@ export default async function CategoryPage({ params }: Props) {
   const category = await getCategoryById(parentId);
   if (!category) notFound();
 
-  const subcategories = await getSubcategories(parentId);
+  // Ultra-fast single SQL query to load all subcategories with counts and covers
+  const subcategories = await getSubcategoriesWithDetails(parentId);
 
   // If this category has NO subcategories, redirect immediately to its products view!
   if (subcategories.length === 0) {
     redirect(`/s/${parentId}`);
   }
-
-  // Fetch covers and product count for each subcategory
-  const subsWithData = await Promise.all(
-    subcategories.map(async (sub) => {
-      const [coverKey, products] = await Promise.all([
-        getCategoryCoverKey(sub.id),
-        getProductsForSubcategory(sub.id),
-      ]);
-      return {
-        ...sub,
-        coverKey,
-        productCount: products.length,
-      };
-    })
-  );
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col antialiased">
@@ -94,28 +80,28 @@ export default async function CategoryPage({ params }: Props) {
         backLabel="الرئيسية"
       />
 
-      <main className="flex-1 max-w-md w-full mx-auto px-4 py-5 space-y-4">
-        <div className="flex items-center justify-between pb-1">
-          <h2 className="text-sm font-black text-slate-800">
+      <main className="flex-1 max-w-md w-full mx-auto px-4 py-4 space-y-3">
+        <div className="flex items-center justify-between px-1 pt-1 pb-0.5">
+          <h2 className="text-sm font-extrabold text-slate-800">
             فئات {category.name}
           </h2>
-          <span className="text-xs font-semibold text-slate-500">
-            {subsWithData.length} فئة متوفرة
+          <span className="text-xs font-semibold text-slate-400">
+            {subcategories.length} فئات
           </span>
         </div>
 
-        <div className="space-y-3.5">
-          {subsWithData.map((sub, index) => (
+        <div className="space-y-2.5">
+          {subcategories.map((sub, index) => (
             <CategoryCard
               key={sub.id}
               href={`/s/${sub.id}`}
               name={sub.name}
               countLabel={
-                sub.productCount > 0
-                  ? `${sub.productCount} قطعة متوفرة`
+                sub.product_count > 0
+                  ? `${sub.product_count} قطعة معروضة`
                   : "تصفح الفئة"
               }
-              imageKey={sub.coverKey}
+              imageKey={sub.cover_key}
               priority={index === 0}
             />
           ))}

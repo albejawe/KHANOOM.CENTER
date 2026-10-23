@@ -4,11 +4,13 @@ import "./globals.css";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://khanomcenter.vercel.app";
 
+// Optimized font weights for fast first load
 const arabicFont = Noto_Sans_Arabic({
   subsets: ["arabic"],
-  weight: ["400", "500", "600", "700", "800", "900"],
+  weight: ["400", "600", "800"],
   variable: "--font-arabic",
   display: "swap",
+  preload: true,
 });
 
 export const metadata: Metadata = {
@@ -54,6 +56,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ar" dir="rtl" className={`${arabicFont.variable} h-full antialiased`}>
+      <head>
+        {/* Preconnect to Cloudflare R2 for instant image delivery on first load */}
+        <link rel="preconnect" href="https://pub-57b2de64f9154f7bbe89467ccbc4dedd.r2.dev" />
+        <link rel="dns-prefetch" href="https://pub-57b2de64f9154f7bbe89467ccbc4dedd.r2.dev" />
+      </head>
       <body className="min-h-full flex flex-col bg-slate-50 text-slate-900 pb-[env(safe-area-inset-bottom)] select-none">
         {children}
       </body>

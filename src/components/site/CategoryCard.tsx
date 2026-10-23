@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { imageUrl } from "@/lib/images";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Sparkles } from "lucide-react";
 
 interface Props {
   href: string;
@@ -15,47 +15,50 @@ export default function CategoryCard({
   name,
   countLabel,
   imageKey,
+  priority = false,
 }: Props) {
   const hasImage = Boolean(imageKey);
 
   return (
     <Link
       href={href}
-      className="group relative flex flex-col justify-end h-44 sm:h-52 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition active:scale-[0.98] border border-slate-200/80 bg-slate-900"
+      className="group relative flex items-center justify-between gap-3 p-3 sm:p-3.5 bg-white hover:bg-slate-50/80 rounded-2xl border border-slate-200/80 hover:border-amber-300/80 shadow-xs hover:shadow-md transition-all duration-200 active:scale-[0.985]"
     >
-      {/* Background Image or Stylish Gradient */}
-      {hasImage ? (
-        <>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+      {/* Right side: Framed Visual Thumbnail */}
+      <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-100/80 relative shadow-2xs">
+        {hasImage ? (
+          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={imageUrl(imageKey!, "thumb")}
             alt={name}
-            loading="lazy"
-            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition duration-500 opacity-90"
+            loading={priority ? "eager" : "lazy"}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
-          {/* Dark gradient overlay for text readability */}
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/40 to-transparent" />
-        </>
-      ) : (
-        <div className="absolute inset-0 bg-gradient-to-br from-rose-900/40 via-slate-900 to-slate-950" />
-      )}
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-amber-500/10 to-amber-600/20 text-amber-600">
+            <Sparkles className="w-7 h-7" />
+          </div>
+        )}
+      </div>
 
-      {/* Content */}
-      <div className="relative z-10 p-4 flex items-end justify-between">
-        <div>
-          <h2 className="text-xl sm:text-2xl font-black text-white leading-tight drop-shadow-sm">
-            {name}
-          </h2>
-          {countLabel && (
-            <span className="text-xs font-semibold text-rose-300 drop-shadow-sm mt-0.5 block">
+      {/* Center: Prominent, Crystal-Clear Typography */}
+      <div className="flex-1 min-w-0 flex flex-col justify-center">
+        <h3 className="text-base sm:text-lg font-black text-slate-900 group-hover:text-amber-700 transition leading-snug">
+          {name}
+        </h3>
+
+        {countLabel && (
+          <div className="mt-1.5 flex items-center gap-1.5">
+            <span className="inline-flex items-center text-[11px] sm:text-xs font-bold px-2.5 py-0.5 rounded-lg bg-amber-50 text-amber-800 border border-amber-200/70">
               {countLabel}
             </span>
-          )}
-        </div>
+          </div>
+        )}
+      </div>
 
-        <div className="w-9 h-9 rounded-2xl bg-white/20 backdrop-blur-md text-white flex items-center justify-center shrink-0 group-hover:-translate-x-1 transition shadow-sm border border-white/20">
-          <ChevronLeft className="w-5 h-5" />
-        </div>
+      {/* Left side: Navigation Indicator */}
+      <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-100/80 border border-slate-200/60 text-slate-400 group-hover:bg-amber-500 group-hover:border-amber-500 group-hover:text-white flex items-center justify-center shrink-0 transition-colors shadow-2xs">
+        <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5]" />
       </div>
     </Link>
   );

@@ -6,6 +6,8 @@ import { formatPrice } from "@/lib/format";
 import SiteHeader from "@/components/site/SiteHeader";
 import ProductGrid from "@/components/site/ProductGrid";
 
+// Fast server rendering with direct product lookup
+
 export const instant = false;
 
 interface Props {
@@ -69,7 +71,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
 
   // Case 2: Category / Subcategory view without ?p=
   const ctaText = `انقر هنا لمشاهدة ${category.name}`;
-  const ogImageUrl = `/api/og?title=${encodeURIComponent(ctaText)}&subtitle=${encodeURIComponent("مجمع خانم للأزياء والكوزمتكس")}`;
+  const ogImageUrl = `/api/og?cat=${encodeURIComponent(category.name)}`;
 
   return {
     title: `${ctaText} | مجمع خانم`,

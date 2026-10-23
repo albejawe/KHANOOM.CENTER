@@ -28,11 +28,64 @@ export interface Product {
   sizes?: Size[];
 }
 
+export interface MainCategoryDetails extends Category {
+  sub_count: number;
+  direct_product_count: number;
+  cover_key: string | null;
+}
+
+export interface SubcategoryDetails extends Category {
+  product_count: number;
+  cover_key: string | null;
+}
+
 export async function getMainCategories(): Promise<Category[]> {
   const result = await db.execute(
     "SELECT id, name, parent_id, image_key, sort_order FROM categories WHERE parent_id IS NULL ORDER BY sort_order ASC, id ASC"
   );
   return result.rows as unknown as Category[];
+}
+
+/**
+ * Ultra-fast single-query loader for Home page:
+ * Fetches all main categories with subcategory count, direct product count,
+ * and fallback cover image key in ONE single database query!
+ */
+export async function getMainCategoriesWithDetails(): Promise<MainCategoryDetails[]> {
+  const result = await db.execute(`
+    SELECT 
+      c.id, 
+      c.name, 
+      c.parent_id, 
+      c.sort_order, 
+      c.image_key,
+      (SELECT COUNT(*) FROM categories sub WHERE sub.parent_id = c.id) as sub_count,
+      (SELECT COUNT(*) FROM products p WHERE p.category_id = c.id AND p.is_hidden = 0) as direct_product_count,
+      COALESCE(
+        c.image_key,
+        (
+          SELECT p.image_key 
+          FROM products p
+          JOIN categories sub ON p.category_id = sub.id
+          WHERE (sub.id = c.id OR sub.parent_id = c.id) AND p.is_hidden = 0 AND p.image_key IS NOT NULL
+          ORDER BY p.id DESC LIMIT 1
+        )
+      ) as cover_key
+    FROM categories c
+    WHERE c.parent_id IS NULL
+    ORDER BY c.sort_order ASC, c.id ASC
+  `);
+
+  return result.rows.map((row) => ({
+    id: Number(row.id),
+    name: String(row.name),
+    parent_id: row.parent_id !== null ? Number(row.parent_id) : null,
+    sort_order: Number(row.sort_order || 0),
+    image_key: row.image_key ? String(row.image_key) : null,
+    sub_count: Number(row.sub_count || 0),
+    direct_product_count: Number(row.direct_product_count || 0),
+    cover_key: row.cover_key ? String(row.cover_key) : null,
+  }));
 }
 
 export async function getSubcategories(parentId: number): Promise<Category[]> {
@@ -41,6 +94,47 @@ export async function getSubcategories(parentId: number): Promise<Category[]> {
     args: [parentId],
   });
   return result.rows as unknown as Category[];
+}
+
+/**
+ * Ultra-fast single-query loader for Category page (/c/[id]):
+ * Fetches all subcategories with product count and cover image in ONE single database query!
+ */
+export async function getSubcategoriesWithDetails(parentId: number): Promise<SubcategoryDetails[]> {
+  const result = await db.execute({
+    sql: `
+      SELECT 
+        s.id, 
+        s.name, 
+        s.parent_id, 
+        s.sort_order, 
+        s.image_key,
+        (SELECT COUNT(*) FROM products p WHERE p.category_id = s.id AND p.is_hidden = 0) as product_count,
+        COALESCE(
+          s.image_key,
+          (
+            SELECT p.image_key 
+            FROM products p 
+            WHERE p.category_id = s.id AND p.is_hidden = 0 AND p.image_key IS NOT NULL 
+            ORDER BY p.id DESC LIMIT 1
+          )
+        ) as cover_key
+      FROM categories s
+      WHERE s.parent_id = ?
+      ORDER BY s.sort_order ASC, s.id ASC
+    `,
+    args: [parentId],
+  });
+
+  return result.rows.map((row) => ({
+    id: Number(row.id),
+    name: String(row.name),
+    parent_id: Number(row.parent_id),
+    sort_order: Number(row.sort_order || 0),
+    image_key: row.image_key ? String(row.image_key) : null,
+    product_count: Number(row.product_count || 0),
+    cover_key: row.cover_key ? String(row.cover_key) : null,
+  }));
 }
 
 export async function getCategoryById(id: number): Promise<Category | null> {

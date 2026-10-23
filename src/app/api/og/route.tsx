@@ -18,10 +18,21 @@ function getCairoFont(): Buffer | null {
   return null;
 }
 
+/**
+ * Reverses word sequence so Satori's LTR layouter outputs natural Arabic RTL order.
+ * Example: "انقر هنا لمشاهدة" -> "لمشاهدة هنا انقر" (renders as "انقر" on the right, "لمشاهدة" on the left).
+ */
+function fixArabicRtl(text: string): string {
+  if (!text) return "";
+  return text.trim().split(/\s+/).reverse().join(" ");
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const title = searchParams.get("title") || "انقر هنا لمشاهدة جميع المنتجات";
-  const subtitle = searchParams.get("subtitle") || "مجمع خانم للأزياء والكوزمتكس";
+  const rawTitle = searchParams.get("title") || searchParams.get("cat") || "جميع المنتجات";
+
+  // Clean title: extract category name if prefixed with "انقر هنا لمشاهدة"
+  const categoryName = rawTitle.replace(/^انقر هنا لمشاهدة\s*/, "").trim() || "جميع المنتجات";
 
   let fontData = getCairoFont();
   if (!fontData) {
@@ -38,10 +49,13 @@ export async function GET(request: Request) {
     }
   }
 
-  // Calculate dynamic font size based on text length
-  const isLong = title.length > 30;
-  const isVeryLong = title.length > 45;
-  const fontSize = isVeryLong ? 46 : isLong ? 54 : 66;
+  // Calculate dynamic font size for line 2 based on length
+  const isVeryLong = categoryName.length > 28;
+  const isLong = categoryName.length > 18;
+  const line2Size = isVeryLong ? 60 : isLong ? 72 : 86;
+
+  const line1Rtl = fixArabicRtl("انقر هنا لمشاهدة");
+  const line2Rtl = fixArabicRtl(categoryName);
 
   return new ImageResponse(
     (
@@ -52,95 +66,44 @@ export async function GET(request: Request) {
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          justifyContent: "space-between",
-          backgroundColor: "#0b1329",
+          justifyContent: "center",
+          backgroundColor: "#090d16",
           backgroundImage:
-            "radial-gradient(circle at 50% 30%, #1e293b 0%, #0b1329 100%)",
+            "radial-gradient(circle at 50% 45%, #172033 0%, #090d16 100%)",
           color: "#ffffff",
           fontFamily: "Cairo",
-          direction: "rtl",
-          padding: "50px 60px",
-          border: "16px solid #d97706",
+          border: "14px solid #f59e0b",
           boxSizing: "border-box",
+          padding: "40px 60px",
+          textAlign: "center",
         }}
       >
-        {/* Top Header Badge */}
+        {/* Line 1: انقر هنا لمشاهدة (Bold clear font) */}
         <div
           style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "16px",
-            backgroundColor: "rgba(217, 119, 6, 0.15)",
-            border: "2px solid rgba(245, 158, 11, 0.4)",
-            borderRadius: "30px",
-            padding: "10px 28px",
+            fontSize: 48,
+            fontWeight: 700,
+            color: "#cbd5e1",
+            marginBottom: 20,
+            letterSpacing: "-0.01em",
+            textShadow: "0 2px 10px rgba(0,0,0,0.8)",
           }}
         >
-          <div
-            style={{
-              width: "18px",
-              height: "18px",
-              borderRadius: "50%",
-              backgroundColor: "#f59e0b",
-            }}
-          />
-          <span
-            style={{
-              fontSize: 26,
-              fontWeight: "bold",
-              color: "#fef3c7",
-            }}
-          >
-            {subtitle}
-          </span>
+          {line1Rtl}
         </div>
 
-        {/* Center Main Huge Call to Action */}
+        {/* Line 2: اسم الفئة (Thicker, bigger, high-contrast gold/amber) */}
         <div
           style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            textAlign: "center",
-            maxWidth: "1050px",
-            padding: "0 20px",
+            fontSize: line2Size,
+            fontWeight: 900,
+            color: "#f59e0b",
+            lineHeight: 1.2,
+            maxWidth: "1080px",
+            textShadow: "0 4px 28px rgba(245, 158, 11, 0.35)",
           }}
         >
-          <div
-            style={{
-              fontSize,
-              fontWeight: 900,
-              color: "#ffffff",
-              lineHeight: 1.25,
-              textShadow: "0 4px 20px rgba(0,0,0,0.8)",
-            }}
-          >
-            {title}
-          </div>
-        </div>
-
-        {/* Bottom Action Pill */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: "#d97706",
-            borderRadius: "24px",
-            padding: "14px 44px",
-            boxShadow: "0 10px 30px rgba(217, 119, 6, 0.4)",
-          }}
-        >
-          <span
-            style={{
-              fontSize: 28,
-              fontWeight: 900,
-              color: "#0b1329",
-            }}
-          >
-            تصفح المعرض والأسعار الآن 👈
-          </span>
+          {line2Rtl}
         </div>
       </div>
     ),
