@@ -114,7 +114,7 @@ export default async function SubcategoryProductsPage({ params, searchParams }: 
   if (!category) notFound();
 
   // Keep old product-sharing URLs working even when the item isn't in the first 24.
-  const requestedId = typeof p === "string" && /^[1-9]\\d*$/.test(p) ? Number(p) : null;
+  const requestedId = typeof p === "string" && /^[1-9]\d*$/.test(p) ? Number(p) : null;
   const focused = requestedId && Number.isSafeInteger(requestedId)
     ? await getProductDetails(requestedId)
     : null;
