@@ -57,7 +57,7 @@ export function PreviewProductShelf({ categoryId, initial }: ProductShelfProps) 
   useEffect(() => {
     alive.current = true;
     const deepLink = new URLSearchParams(window.location.search).get("p");
-    if (deepLink && /^\\d+$/.test(deepLink)) {
+    if (deepLink && /^\d+$/.test(deepLink)) {
       const id = Number(deepLink);
       if (initial.products.some((p) => p.id === id)) setSelectedId(id);
     }
